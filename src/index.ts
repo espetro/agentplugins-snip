@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process"
 import type { Hooks, Plugin } from "@opencode-ai/plugin"
 
 const ENV_VAR_RE = /^([A-Za-z_][A-Za-z0-9_]*=[^\s]* +)*/
@@ -9,10 +10,10 @@ const OPERATOR_RE = /(\s*(?:&&|\|\||;)\s*|\s&\s?)/
 function findFirstPipe(command: string): number {
   let inSingleQuote = false
   let inDoubleQuote = false
-  
+
   for (let i = 0; i < command.length; i++) {
     const char = command[i]
-    
+
     if (char === "'" && !inDoubleQuote) {
       inSingleQuote = !inSingleQuote
     } else if (char === '"' && !inSingleQuote) {
@@ -25,7 +26,7 @@ function findFirstPipe(command: string): number {
       return i
     }
   }
-  
+
   return -1
 }
 
@@ -37,6 +38,13 @@ function snipCommand(command: string): string {
   return `${envPrefix}snip ${bareCmd}`
 }
 
+/**
+ * Mutates `output.args.command` by prefixing each executable segment with `snip `.
+ *
+ * Pure: no side effects beyond the mutation. Safe to call from any hook runtime
+ * that hands us `(input, output)` shaped like OpenCode's `tool.execute.before`
+ * signature (which the agentplugins OpenCode adapter does).
+ */
 export const toolExecuteBefore: NonNullable<Hooks["tool.execute.before"]> = async (input, output) => {
   if (input.tool !== "bash") return
 
@@ -64,10 +72,30 @@ export const toolExecuteBefore: NonNullable<Hooks["tool.execute.before"]> = asyn
     .join("")
 }
 
-export const SnipPlugin: Plugin = async ({ $ }) => {
+let snipCached: boolean | null = null
+
+/**
+ * Probe whether the `snip` binary is on PATH. Uses Node's `child_process` so
+ * the check works under any runtime — not just OpenCode's Bun-shell.
+ */
+export function isSnipAvailable(): boolean {
+  if (snipCached !== null) return snipCached
   try {
-    await $`which snip`.quiet()
+    execFileSync("which", ["snip"], { stdio: "ignore" })
+    snipCached = true
   } catch {
+    snipCached = false
+  }
+  return snipCached
+}
+
+/**
+ * Legacy OpenCode plugin loader. Kept for backwards compatibility with
+ * `opencode.json` consumers that install via npm directly. The agentplugins
+ * build path bypasses this and inlines `toolExecuteBefore` directly.
+ */
+export const SnipPlugin: Plugin = async () => {
+  if (!isSnipAvailable()) {
     console.warn("[snip] snip binary not found in PATH — plugin disabled")
     return {}
   }
