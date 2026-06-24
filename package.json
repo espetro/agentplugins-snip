@@ -5,18 +5,27 @@
   "main": ".opencode/plugins/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build": "node scripts/build.mjs",
+    "build:smoke": "node --import tsx scripts/smoke-build.mjs",
+    "validate": "node -e \"import('@agentplugins/core').then(({validateUniversal})=>{import('node:fs').then(fs=>{const m=fs.readFileSync('agentplugins.config.ts','utf8');console.log('manifest present:',m.length,'chars')})})\""
   },
   "dependencies": {
     "@opencode-ai/plugin": "^1.0.0"
   },
   "devDependencies": {
+    "@agentplugins/adapter-opencode": "^0.2.0",
+    "@agentplugins/core": "^0.2.0",
+    "@types/node": "^26.0.0",
+    "esbuild": "^0.28.1",
+    "tsx": "^4.22.4",
     "typescript": "^5.0.0",
     "vitest": "^3.0.0"
   },
   "keywords": [
     "opencode",
     "opencode-plugin",
+    "agentplugins",
     "snip",
     "llm",
     "tokens",
@@ -33,7 +42,10 @@
   },
   "files": [
     ".opencode",
-    "src"
+    "agentplugins.config.ts",
+    "src",
+    "scripts/build.mjs",
+    "dist/opencode"
   ],
   "release": {
     "branches": [
