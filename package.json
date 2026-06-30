@@ -14,8 +14,8 @@
     "@opencode-ai/plugin": "^1.0.0"
   },
   "devDependencies": {
-    "@agentplugins/adapter-opencode": "^0.2.0",
-    "@agentplugins/core": "^0.2.0",
+    "@agentplugins/adapter-opencode": "^0.6.0",
+    "@agentplugins/core": "^0.6.0",
     "@types/node": "^26.0.0",
     "esbuild": "^0.28.1",
     "tsx": "^4.22.4",
